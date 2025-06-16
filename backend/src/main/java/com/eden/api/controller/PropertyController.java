@@ -50,4 +50,15 @@ public class PropertyController {
             @RequestParam(required = false) Long userId) {
         return ResponseEntity.ok(propertyService.getSuggestions(userId));
     }
+
+    /**
+     * GET /api/properties/featured?lat=123&lng=456
+     * Returns featured properties, ideally using nearby locations.
+     */
+    @GetMapping("/featured")
+    public ResponseEntity<List<PropertyResponseDTO>> getFeatured(
+            @RequestParam(required = false) Double lat,
+            @RequestParam(required = false) Double lng) {
+        return ResponseEntity.ok(propertyService.getFeaturedNearbyProperties(lat, lng));
+    }
 }

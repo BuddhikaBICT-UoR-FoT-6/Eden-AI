@@ -350,4 +350,41 @@ public class PropertyService {
         }
         return score;
     }
+
+    /**
+     * Retrieves featured properties based on location.
+     */
+    public List<PropertyResponseDTO> getFeaturedNearbyProperties(Double lat, Double lng) {
+        if (lat == null || lng == null) {
+            return getRandomProperties(3);
+        }
+        
+        List<PropertyResponseDTO> featured = googleMapsService.searchNearbyTopRated(lat, lng);
+        if (featured == null || featured.isEmpty()) {
+            return getRandomProperties(3);
+        }
+        return featured;
+    }
+    
+    private List<PropertyResponseDTO> getRandomProperties(int limit) {
+        List<com.eden.api.entity.Property> allProps = propertyRepository.findAll();
+        java.util.Collections.shuffle(allProps);
+        return allProps.stream().limit(limit).map(p -> {
+            List<String> propertyVibes = propertyVibeRepository.findByPropertyId(p.getId()).stream()
+                    .map(pv -> pv.getVibe().getName())
+                    .toList();
+            return PropertyResponseDTO.builder()
+                    .id(p.getId())
+                    .name(p.getName())
+                    .description(p.getDescription())
+                    .location(p.getLocation())
+                    .pricePerNight(p.getPricePerNight())
+                    .imageUrl(p.getImageUrl())
+                    .contactDetails(p.getContactDetails())
+                    .rating(p.getRating())
+                    .reviewsCount(p.getReviewsCount())
+                    .vibes(propertyVibes)
+                    .build();
+        }).toList();
+    }
 }
