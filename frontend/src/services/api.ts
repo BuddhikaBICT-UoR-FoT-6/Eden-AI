@@ -58,6 +58,8 @@ export const searchByVibe = async (prompt: string): Promise<Property[]> => {
 
 export interface User {
   id: number;
+  name: string;
+  email: string;
   username: string;
   consent: boolean;
 }
@@ -69,13 +71,38 @@ export interface SearchHistory {
   timestamp: string;
 }
 
-export const registerUser = async (user: any): Promise<User> => {
-  const { data } = await apiClient.post<User>('/api/users/register', user);
+export const initiateRegister = async (user: any): Promise<string> => {
+  const { data } = await apiClient.post<string>('/api/users/register/initiate', user);
   return data;
 };
 
-export const loginUser = async (user: any): Promise<User> => {
-  const { data } = await apiClient.post<User>('/api/users/login', user);
+export const verifyRegister = async (user: any): Promise<User> => {
+  const { data } = await apiClient.post<User>('/api/users/register/verify', user);
+  return data;
+};
+
+export const initiateLogin = async (credentials: any): Promise<string> => {
+  const { data } = await apiClient.post<string>('/api/users/login/initiate', credentials);
+  return data;
+};
+
+export const verifyLogin = async (credentials: any): Promise<User> => {
+  const { data } = await apiClient.post<User>('/api/users/login/verify', credentials);
+  return data;
+};
+
+export const updateName = async (profileData: any): Promise<User> => {
+  const { data } = await apiClient.post<User>('/api/users/profile/update-name', profileData);
+  return data;
+};
+
+export const initiatePasswordChange = async (profileData: any): Promise<string> => {
+  const { data } = await apiClient.post<string>('/api/users/profile/change-password/initiate', profileData);
+  return data;
+};
+
+export const verifyPasswordChange = async (profileData: any): Promise<User> => {
+  const { data } = await apiClient.post<User>('/api/users/profile/change-password/verify', profileData);
   return data;
 };
 
@@ -97,6 +124,13 @@ export const addUserHistory = async (userId: number, query: string): Promise<any
 export const getSuggestions = async (userId?: number): Promise<Property[]> => {
   const { data } = await apiClient.get<Property[]>('/api/properties/suggestions', {
     params: userId ? { userId } : {},
+  });
+  return data;
+};
+
+export const getFeaturedProperties = async (lat?: number, lng?: number): Promise<Property[]> => {
+  const { data } = await apiClient.get<Property[]>('/api/properties/featured', {
+    params: (lat !== undefined && lng !== undefined) ? { lat, lng } : {},
   });
   return data;
 };
