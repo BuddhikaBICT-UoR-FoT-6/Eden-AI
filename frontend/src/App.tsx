@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import SearchBar from './components/SearchBar';
+import { FeaturedStaysSidebar } from './components/FeaturedStaysSidebar';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { useTheme } from './theme/ThemeProvider';
 import { useVibeSearch } from './hooks/useVibeSearch';
@@ -11,6 +12,7 @@ import {
   getSuggestions 
 } from './services/api';
 import type { User, SearchHistory, Property } from './services/api';
+import { UserSettingsModal } from './components/UserSettingsModal';
 import './index.css';
 
 /**
@@ -37,6 +39,8 @@ const App: React.FC = () => {
   const [suggestions, setSuggestions] = useState<Property[]>([]);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isFeaturedSidebarOpen, setIsFeaturedSidebarOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   // Toggle theme
   const toggleTheme = () => {
@@ -151,27 +155,103 @@ const App: React.FC = () => {
               )}
             </div>
             
-            {hasSearched ? (
-              <SearchBar 
-                isNavbarMode={true} 
-                onSearch={handleSearch} 
-                isLoading={isLoading} 
-                onExit={reset} 
-                initialValue={query} 
-              />
-            ) : (
-              <p className="navbar-tagline">Sri Lanka's Vibe-Based Travel Finder</p>
-            )}
+            <div className="navbar-center-item">
+              {hasSearched ? (
+                <SearchBar 
+                  isNavbarMode={true} 
+                  onSearch={handleSearch} 
+                  isLoading={isLoading} 
+                  onExit={reset} 
+                  initialValue={query} 
+                />
+              ) : (
+                <p className="navbar-tagline">Sri Lanka's Vibe-Based Travel Finder</p>
+              )}
+            </div>
 
-            <button
-              className="nav-theme-toggle-btn"
-              onClick={toggleTheme}
-              title={`Switch to ${themeId === 'light' ? 'Dark' : 'Light'} Mode`}
-              aria-label="Toggle display theme"
-            >
-              {themeId === 'light' ? '🌙' : '☀️'}
-            </button>
+            <div className="navbar-right" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <button
+                onClick={() => setIsFeaturedSidebarOpen(true)}
+                className="featured-stays-toggle-btn"
+                style={{
+                  background: 'color-mix(in srgb, var(--color-surface) 60%, transparent)',
+                  border: '1px solid var(--color-border)',
+                  color: 'var(--color-text)',
+                  padding: '6px 14px',
+                  borderRadius: '100px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                Featured Stays
+              </button>
+              {currentUser && (
+                <div className="navbar-user-profile" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '1.2rem' }}>🌴</span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text)' }}>
+                      Welcome, {currentUser.username}
+                    </span>
+                  </div>
+                  <button 
+                    onClick={() => setIsSettingsModalOpen(true)}
+                    className="settings-btn-navbar"
+                    style={{
+                      background: 'color-mix(in srgb, var(--color-surface) 60%, transparent)',
+                      border: '1px solid var(--color-border)',
+                      color: 'var(--color-text)',
+                      padding: '6px 14px',
+                      borderRadius: '100px',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    ⚙️ Settings
+                  </button>
+                  <button 
+                    onClick={handleLogout}
+                    className="logout-btn-navbar"
+                    style={{
+                      background: 'rgba(255, 107, 107, 0.1)',
+                      border: '1px solid rgba(255, 107, 107, 0.3)',
+                      color: '#ff6b6b',
+                      padding: '6px 14px',
+                      borderRadius: '100px',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+              <button
+                className="nav-theme-toggle-btn"
+                onClick={toggleTheme}
+                title={`Switch to ${themeId === 'light' ? 'Dark' : 'Light'} Mode`}
+                aria-label="Toggle display theme"
+              >
+                {themeId === 'light' ? '🌙' : '☀️'}
+              </button>
+            </div>
           </nav>
+        )}
+
+        {isSettingsModalOpen && currentUser && (
+          <UserSettingsModal 
+            currentUser={currentUser} 
+            onUpdateUser={handleLogin} 
+            onClose={() => setIsSettingsModalOpen(false)} 
+          />
         )}
 
         {/* Mobile Header */}
@@ -214,6 +294,12 @@ const App: React.FC = () => {
              </button>
           </header>
         )}
+
+        {/* Featured Stays Sidebar */}
+        <FeaturedStaysSidebar 
+          isOpen={isFeaturedSidebarOpen} 
+          onClose={() => setIsFeaturedSidebarOpen(false)} 
+        />
 
         {/* Main Content Area */}
         <Routes>
