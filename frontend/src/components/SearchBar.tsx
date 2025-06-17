@@ -424,10 +424,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
         .vibe-chip {
           padding: 8px 16px;
-          background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-          border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid #ffffff;
           border-radius: 100px;
-          color: var(--color-primary);
+          color: #ffffff;
           font-size: 0.875rem;
           font-family: var(--font-sans);
           cursor: pointer;
@@ -436,24 +436,24 @@ const SearchBar: React.FC<SearchBarProps> = ({
         }
 
         .vibe-chip:hover:not(:disabled) {
-          background: color-mix(in srgb, var(--color-primary) 25%, transparent);
-          border-color: color-mix(in srgb, var(--color-primary) 60%, transparent);
+          background: rgba(255, 255, 255, 0.15);
+          border-color: #ffffff;
           transform: translateY(-1px);
         }
 
         .vibe-chip.active {
-          background: var(--color-primary);
-          border-color: var(--color-primary);
+          background: #ffffff;
+          border-color: #ffffff;
           color: var(--color-bg, #0d0e12);
           font-weight: 600;
-          box-shadow: 0 0 12px color-mix(in srgb, var(--color-primary) 40%, transparent);
+          box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
           display: inline-flex;
           align-items: center;
         }
 
         .vibe-chip.active:hover:not(:disabled) {
-          background: color-mix(in srgb, var(--color-primary) 90%, #fff);
-          border-color: color-mix(in srgb, var(--color-primary) 90%, #fff);
+          background: rgba(255, 255, 255, 0.9);
+          border-color: rgba(255, 255, 255, 0.9);
           transform: translateY(-1px);
         }
 
