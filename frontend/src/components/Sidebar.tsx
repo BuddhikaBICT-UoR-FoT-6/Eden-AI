@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
 import { 
-  loginUser, 
-  registerUser, 
-  updateUserConsent 
+  initiateLogin,
+  verifyLogin,
+  initiateRegister,
+  verifyRegister
 } from '../services/api';
 import type { User, SearchHistory, Property } from '../services/api';
 
 interface SidebarProps {
   currentUser: User | null;
   onLogin: (user: User) => void;
-  onLogout: () => void;
   history: SearchHistory[];
   suggestions: Property[];
   onHistoryClick: (query: string) => void;
-  onConsentChange: (consent: boolean) => void;
   onSuggestionClick: (property: Property) => void;
   isOpen?: boolean;
   hasSearched?: boolean;
@@ -28,40 +27,48 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({
   currentUser,
   onLogin,
-  onLogout,
   history,
   suggestions,
   onHistoryClick,
-  onConsentChange,
   onSuggestionClick,
   isOpen = false,
   onClose,
 }) => {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [consent, setConsent] = useState(true);
+  
   const [authError, setAuthError] = useState<string | null>(null);
+  const [authSuccessMsg, setAuthSuccessMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  const [isOtpStep, setIsOtpStep] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) return;
+    if (isRegisterMode && (!name.trim() || !email.trim())) return;
 
     setIsLoading(true);
     setAuthError(null);
+    setAuthSuccessMsg(null);
 
     try {
       if (isRegisterMode) {
-        const user = await registerUser({ username, password, consent });
-        onLogin(user);
+        const msg = await initiateRegister({ name, email, username, password, consent });
+        setAuthSuccessMsg(msg);
+        setIsOtpStep(true);
       } else {
-        const user = await loginUser({ username, password });
-        onLogin(user);
+        const emailSentTo = await initiateLogin({ username, password });
+        setEmail(emailSentTo); // Required for OTP verification
+        setAuthSuccessMsg(`OTP sent to ${emailSentTo}`);
+        setIsOtpStep(true);
       }
-      // Reset form
-      setUsername('');
-      setPassword('');
     } catch (err: any) {
       setAuthError(err.response?.data || 'Authentication failed. Please try again.');
     } finally {
@@ -69,16 +76,33 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  const handleConsentToggle = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const checked = e.target.checked;
-    setConsent(checked);
-    if (currentUser) {
-      try {
-        const updated = await updateUserConsent(currentUser.id, checked);
-        onConsentChange(updated.consent);
-      } catch (err) {
-        console.error('Failed to update consent', err);
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpCode.trim()) return;
+
+    setIsLoading(true);
+    setAuthError(null);
+
+    try {
+      if (isRegisterMode) {
+        const user = await verifyRegister({ email, otpCode });
+        onLogin(user);
+      } else {
+        const user = await verifyLogin({ email, otpCode });
+        onLogin(user);
       }
+      // Reset form
+      setName('');
+      setEmail('');
+      setUsername('');
+      setPassword('');
+      setOtpCode('');
+      setIsOtpStep(false);
+      setAuthSuccessMsg(null);
+    } catch (err: any) {
+      setAuthError(err.response?.data || 'Invalid OTP. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -91,125 +115,189 @@ const Sidebar: React.FC<SidebarProps> = ({
       onClick={(e) => e.stopPropagation()}
     >
       
-      {/* ─── User Authentication Section ─── */}
-      <div className="sidebar-section auth-section">
-        {onClose && (
-          <button 
-            onClick={onClose} 
-            className="sidebar-inner-close-btn"
-            aria-label="Close sidebar"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              background: 'rgba(0, 0, 0, 0.4)',
-              border: '1px solid var(--color-border)',
-              color: 'var(--color-text)',
-              padding: '6px 12px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              marginBottom: '16px',
-              transition: 'background 0.2s'
-            }}
-            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-            onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.4)'}
-          >
-            ❮ Close
-          </button>
-        )}
-        {currentUser ? (
-          <div className="user-profile">
-            <div className="user-avatar">🌴</div>
-            <div className="user-info">
-              <h4 className="user-name">Welcome, {currentUser.username}</h4>
-              <p className="user-status">Traveler Account</p>
-            </div>
-            
-            <div className="consent-toggle-wrapper">
-              <label className="consent-label">
-                <input 
-                  type="checkbox" 
-                  checked={currentUser.consent}
-                  onChange={handleConsentToggle}
-                  className="consent-checkbox"
-                />
-                <span className="consent-text">
-                  Consent to use my search history to improve AI models & recommend properties.
-                </span>
-              </label>
-            </div>
-
-            <button onClick={onLogout} className="logout-btn">Log Out</button>
-          </div>
-        ) : (
-          <form onSubmit={handleAuthSubmit} className="auth-form">
-            <h3 className="sidebar-title">{isRegisterMode ? 'Register Account' : 'Sign In'}</h3>
-            <p className="auth-teaser">
-              Create an optional account to save your search history and get personalized vibe matches.
-            </p>
-            
-            <div className="input-group">
-              <input 
-                type="text" 
-                placeholder="Username" 
-                value={username} 
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                className="auth-input"
-                disabled={isLoading}
-              />
-            </div>
-            
-            <div className="input-group">
-              <input 
-                type="password" 
-                placeholder="Password" 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="auth-input"
-                disabled={isLoading}
-              />
-            </div>
-
-            {isRegisterMode && (
-              <div className="consent-toggle-wrapper">
-                <label className="consent-label">
-                  <input 
-                    type="checkbox" 
-                    checked={consent}
-                    onChange={(e) => setConsent(e.target.checked)}
-                    className="consent-checkbox"
-                    disabled={isLoading}
-                  />
-                  <span className="consent-text">
-                    Allow using my search data to personalize recommendations and improve the AI models.
-                  </span>
-                </label>
-              </div>
-            )}
-
-            {authError && <div className="auth-error-msg">{authError}</div>}
-
-            <button type="submit" className="auth-submit-btn" disabled={isLoading}>
-              {isLoading ? 'Processing...' : isRegisterMode ? 'Register' : 'Sign In'}
-            </button>
-
+      {/* ─── User Authentication Section (Guests Only) ─── */}
+      {!currentUser && (
+        <div className="sidebar-section auth-section">
+          {onClose && (
             <button 
-              type="button" 
-              onClick={() => {
-                setIsRegisterMode(!isRegisterMode);
-                setAuthError(null);
+              onClick={onClose} 
+              className="sidebar-inner-close-btn"
+              aria-label="Close sidebar"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                background: 'rgba(0, 0, 0, 0.4)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-text)',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                marginBottom: '16px',
+                transition: 'background 0.2s'
               }}
-              className="toggle-mode-btn"
-              disabled={isLoading}
+              onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+              onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.4)'}
             >
-              {isRegisterMode ? 'Already have an account? Sign In' : "Don't have an account? Register"}
+              ❮ Close
             </button>
-          </form>
-        )}
-      </div>
+          )}
+          {isOtpStep ? (
+            <form onSubmit={handleOtpSubmit} className="auth-form">
+              <h3 className="sidebar-title">Verify OTP</h3>
+              <p className="auth-teaser">
+                {authSuccessMsg || `Please enter the 6-digit code sent to your email.`}
+              </p>
+              
+              <div className="input-group">
+                <input 
+                  type="text" 
+                  placeholder="6-digit OTP" 
+                  value={otpCode} 
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  required
+                  className="auth-input"
+                  disabled={isLoading}
+                />
+              </div>
+              
+              {authError && <div className="auth-error-msg">{authError}</div>}
+
+              <button type="submit" className="auth-submit-btn" disabled={isLoading}>
+                {isLoading ? 'Verifying...' : 'Verify OTP'}
+              </button>
+
+              <button 
+                type="button" 
+                onClick={() => {
+                  setIsOtpStep(false);
+                  setAuthError(null);
+                  setAuthSuccessMsg(null);
+                }}
+                className="toggle-mode-btn"
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleAuthSubmit} className="auth-form">
+              <h3 className="sidebar-title">{isRegisterMode ? 'Register Account' : 'Sign In'}</h3>
+              <p className="auth-teaser">
+                Create an optional account to save your search history and get personalized vibe matches.
+              </p>
+              
+              {isRegisterMode && (
+                <>
+                  <div className="input-group">
+                    <input 
+                      type="text" 
+                      placeholder="Full Name" 
+                      value={name} 
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      className="auth-input"
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className="input-group">
+                    <input 
+                      type="email" 
+                      placeholder="Email Address" 
+                      value={email} 
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="auth-input"
+                      disabled={isLoading}
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="input-group">
+                <input 
+                  type="text" 
+                  placeholder="Username" 
+                  value={username} 
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  className="auth-input"
+                  disabled={isLoading}
+                />
+              </div>
+              
+              <div className="input-group" style={{ position: 'relative' }}>
+                <input 
+                  type={showPassword ? 'text' : 'password'} 
+                  placeholder="Password" 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="auth-input"
+                  disabled={isLoading}
+                  style={{ paddingRight: '40px' }}
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--color-text-muted)',
+                    cursor: 'pointer',
+                    padding: '4px'
+                  }}
+                >
+                  {showPassword ? '👁️' : '🙈'}
+                </button>
+              </div>
+
+              {isRegisterMode && (
+                <div className="consent-toggle-wrapper">
+                  <label className="consent-label">
+                    <input 
+                      type="checkbox" 
+                      checked={consent}
+                      onChange={(e) => setConsent(e.target.checked)}
+                      className="consent-checkbox"
+                      disabled={isLoading}
+                    />
+                    <span className="consent-text">
+                      Allow using my search data to personalize recommendations and improve the AI models.
+                    </span>
+                  </label>
+                </div>
+              )}
+
+              {authError && <div className="auth-error-msg">{authError}</div>}
+
+              <button type="submit" className="auth-submit-btn" disabled={isLoading}>
+                {isLoading ? 'Processing...' : isRegisterMode ? 'Send OTP' : 'Login with OTP'}
+              </button>
+
+              <button 
+                type="button" 
+                onClick={() => {
+                  setIsRegisterMode(!isRegisterMode);
+                  setAuthError(null);
+                  setAuthSuccessMsg(null);
+                }}
+                className="toggle-mode-btn"
+                disabled={isLoading}
+              >
+                {isRegisterMode ? 'Already have an account? Sign In' : "Don't have an account? Register"}
+              </button>
+            </form>
+          )}
+        </div>
+      )}
+
+
 
       <hr className="sidebar-divider" />
 
