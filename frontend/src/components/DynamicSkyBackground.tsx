@@ -20,17 +20,17 @@ const SKY_GRADIENTS = {
 const STAR_VISIBILITY = { dawn: 0.3, day: 0, dusk: 0.55, night: 1 };
 
 const SUN_CONFIG = {
-  dawn: { visible: true, top: "60%", left: "16%", size: 86, glow: "#ffb27a" },
-  day: { visible: true, top: "10%", left: "70%", size: 108, glow: "#fff3c4" },
-  dusk: { visible: true, top: "56%", left: "80%", size: 92, glow: "#ff8a5c" },
+  dawn: { visible: true, top: "75%", left: "20%", size: 100, glow: "#ffb27a" },
+  day: { visible: true, top: "15%", left: "75%", size: 130, glow: "#ffeb3b" },
+  dusk: { visible: true, top: "75%", left: "80%", size: 110, glow: "#ff7043" },
   night: { visible: false, top: "50%", left: "50%", size: 0, glow: "#fff3c4" },
 };
 
 const MOON_CONFIG = {
   dawn: { visible: false, top: "50%", right: "50%", size: 0, glow: "#eef0ff" },
   day: { visible: false, top: "50%", right: "50%", size: 0, glow: "#eef0ff" },
-  dusk: { visible: true, top: "14%", right: "14%", size: 64, glow: "#dfe6ff" },
-  night: { visible: true, top: "9%", right: "10%", size: 78, glow: "#eef0ff" },
+  dusk: { visible: false, top: "50%", right: "50%", size: 0, glow: "#dfe6ff" },
+  night: { visible: true, top: "15%", right: "20%", size: 85, glow: "#eef0ff" },
 };
 
 const isRainy = (w: string) => w === "rain" || w === "thunderstorm" || w === "drizzle";
@@ -198,8 +198,8 @@ function CelestialBody({ phase, weather }: { phase: "dawn"|"day"|"dusk"|"night",
           height: sun.size,
           borderRadius: "50%",
           transform: "translate(-50%,-50%)",
-          background: `radial-gradient(circle at 35% 35%, #fff8e4 0%, ${sun.glow} 45%, transparent 75%)`,
-          boxShadow: `0 0 70px 24px ${sun.glow}66`,
+          background: `radial-gradient(circle at 50% 50%, #ffffff 0%, ${sun.glow} 40%, transparent 75%)`,
+          boxShadow: `0 0 90px 40px ${sun.glow}88`,
           opacity: sun.visible ? dim : 0,
           transition: "all 1.4s ease",
           pointerEvents: "none",
