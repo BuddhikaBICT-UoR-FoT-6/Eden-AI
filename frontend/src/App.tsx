@@ -52,7 +52,7 @@ const App: React.FC = () => {
       } else {
         setSuggestions([]);
       }
-      setIsSidebarOpen(true);
+      setIsSidebarOpen(false);
     } else {
       setHistory([]);
       setSuggestions([]);
