@@ -21,6 +21,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 @ConditionalOnProperty(name = "ai.provider", havingValue = "gemini", matchIfMissing = true)
 public class GeminiService implements AiSearchProvider {
 

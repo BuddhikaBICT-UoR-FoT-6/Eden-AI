@@ -1,7 +1,5 @@
 package com.eden.api.integration;
 
-import com.eden.api.repository.PropertyRepository;
-import com.eden.api.repository.VibeRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,16 +24,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@SuppressWarnings("null")
 class PropertyApiIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
-    private PropertyRepository propertyRepository;
-
-    @Autowired
-    private VibeRepository vibeRepository;
 
     @Test
     @DisplayName("GET /api/properties should return HTTP 200 and a JSON array")

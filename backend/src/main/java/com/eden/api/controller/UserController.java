@@ -15,6 +15,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 @CrossOrigin(origins = {"http://localhost:5173", "${FRONTEND_URL:https://eden-ai-frontend.azurewebsites.net}"})
 public class UserController {
 
@@ -86,7 +87,6 @@ public class UserController {
         if (userOpt.isEmpty()) {
             return ResponseEntity.badRequest().body("User not found");
         }
-        User user = userOpt.get();
         // Save query history
         SearchHistory history = SearchHistory.builder()
                 .userId(request.getUserId())

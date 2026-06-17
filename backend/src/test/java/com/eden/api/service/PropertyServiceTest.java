@@ -33,6 +33,7 @@ import static org.mockito.Mockito.*;
  * via Maven Surefire plugin configuration in pom.xml.
  */
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("null")
 class PropertyServiceTest {
 
     @Mock private PropertyRepository propertyRepository;
@@ -124,7 +125,6 @@ class PropertyServiceTest {
         when(geminiService.extractSearchParameters(anyString())).thenReturn(extraction);
         when(propertyRepository.findAll()).thenReturn(List.of(testProperty, nonMatchingProperty));
         when(propertyVibeRepository.findByPropertyId(propertyId)).thenReturn(List.of());
-        when(googleMapsService.searchRealWorldProperties(any(), any())).thenReturn(List.of());
 
         // Act
         List<PropertyResponseDTO> result = propertyService.searchByNaturalLanguage("jungle in Yala");
@@ -153,7 +153,6 @@ class PropertyServiceTest {
         when(geminiService.extractSearchParameters(anyString())).thenReturn(extraction);
         when(propertyRepository.findAll()).thenReturn(List.of(testProperty, cheapVilla));
         when(propertyVibeRepository.findByPropertyId(cheapVilla.getId())).thenReturn(List.of());
-        when(googleMapsService.searchRealWorldProperties(any(), any())).thenReturn(List.of());
 
         // Act — testProperty costs $850, which exceeds the $500 budget
         List<PropertyResponseDTO> result = propertyService.searchByNaturalLanguage("under 500");

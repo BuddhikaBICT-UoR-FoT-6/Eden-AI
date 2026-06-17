@@ -31,13 +31,13 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class PropertyService {
 
     private final PropertyRepository propertyRepository;
     private final PropertyVibeRepository propertyVibeRepository;
     private final SearchHistoryRepository searchHistoryRepository;
     private final AiSearchProvider aiSearchProvider;
-    private final GoogleMapsService googleMapsService;
 
     /**
      * Retrieves all properties from the database.

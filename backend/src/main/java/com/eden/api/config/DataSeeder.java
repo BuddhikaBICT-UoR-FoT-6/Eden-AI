@@ -5,11 +5,14 @@ import com.eden.api.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.List;
 
 @Configuration
+@Component
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class DataSeeder implements CommandLineRunner {
 
     private final PropertyRepository propertyRepository;

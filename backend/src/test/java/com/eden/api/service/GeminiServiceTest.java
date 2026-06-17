@@ -1,23 +1,13 @@
 package com.eden.api.service;
 
 import com.eden.api.dto.SearchExtractionDTO;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * Unit Tests for GeminiService.
@@ -28,8 +18,6 @@ class GeminiServiceTest {
 
     @InjectMocks
     private GeminiService geminiService;
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
     @DisplayName("extractSearchParameters() should return empty DTO on Gemini API failure")

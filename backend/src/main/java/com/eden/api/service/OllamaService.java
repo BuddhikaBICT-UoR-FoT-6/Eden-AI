@@ -15,6 +15,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 @ConditionalOnProperty(name = "ai.provider", havingValue = "ollama")
 public class OllamaService implements AiSearchProvider {
 
