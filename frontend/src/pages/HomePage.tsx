@@ -658,7 +658,7 @@ const HomePage: React.FC<HomePageProps> = ({
         /* Collapsible Sidebar spacing for main content */
         @media (min-width: 768px) {
           .home-page.sidebar-active .main-content {
-            margin-left: 320px;
+            /* removed margin-left to keep it centered on screen */
           }
           .home-page .main-content {
             transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);

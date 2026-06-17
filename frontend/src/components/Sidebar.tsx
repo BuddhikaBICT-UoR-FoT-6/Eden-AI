@@ -279,6 +279,11 @@ const Sidebar: React.FC<SidebarProps> = ({
           gap: 24px;
           overflow-y: auto;
           box-sizing: border-box;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        .sidebar::-webkit-scrollbar {
+          display: none;
         }
 
 
