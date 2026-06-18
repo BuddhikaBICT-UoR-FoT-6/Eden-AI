@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 @SuppressWarnings("null")
-@CrossOrigin(origins = {"http://localhost:5173", "${FRONTEND_URL:https://eden-ai-frontend.azurewebsites.net}"})
 public class UserController {
 
     private final UserRepository userRepository;

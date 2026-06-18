@@ -17,7 +17,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/properties")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:5173", "${FRONTEND_URL:https://eden-ai-frontend.azurewebsites.net}"})
 public class PropertyController {
 
     private final PropertyService propertyService;
