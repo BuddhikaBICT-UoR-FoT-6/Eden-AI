@@ -8,9 +8,14 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
  */
 export const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 60000,
+  timeout: 90000,
   headers: { 'Content-Type': 'application/json' },
 });
+
+/** Pings the backend on app load to wake it up from cold start */
+export const pingBackend = async (): Promise<void> => {
+  try { await apiClient.get('/api/properties', { timeout: 90000 }); } catch { /* ignore */ }
+};
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

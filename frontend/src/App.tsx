@@ -9,7 +9,8 @@ import { useVibeSearch } from './hooks/useVibeSearch';
 import { 
   getUserHistory, 
   addUserHistory, 
-  getSuggestions 
+  getSuggestions,
+  pingBackend
 } from './services/api';
 import type { User, SearchHistory, Property } from './services/api';
 import { UserSettingsModal } from './components/UserSettingsModal';
@@ -41,6 +42,9 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isFeaturedSidebarOpen, setIsFeaturedSidebarOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
+  // Ping backend on mount to wake from cold start
+  useEffect(() => { pingBackend(); }, []);
 
   // Toggle theme
   const toggleTheme = () => {
