@@ -170,24 +170,6 @@ const App: React.FC = () => {
             </div>
 
             <div className="navbar-right" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <button
-                onClick={() => setIsFeaturedSidebarOpen(true)}
-                className="featured-stays-toggle-btn"
-                style={{
-                  background: 'color-mix(in srgb, var(--color-surface) 60%, transparent)',
-                  border: '1px solid var(--color-border)',
-                  color: 'var(--color-text)',
-                  padding: '6px 14px',
-                  borderRadius: '100px',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                Featured Stays
-              </button>
               {currentUser && (
                 <div className="navbar-user-profile" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

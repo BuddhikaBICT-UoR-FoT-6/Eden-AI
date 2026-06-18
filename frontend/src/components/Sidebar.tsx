@@ -115,34 +115,35 @@ const Sidebar: React.FC<SidebarProps> = ({
       onClick={(e) => e.stopPropagation()}
     >
       
+      {/* ─── Close Button (always visible) ─── */}
+      {onClose && (
+        <button 
+          onClick={onClose} 
+          className="sidebar-inner-close-btn"
+          aria-label="Close sidebar"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            background: 'rgba(0, 0, 0, 0.4)',
+            border: '1px solid var(--color-border)',
+            color: 'var(--color-text)',
+            padding: '6px 12px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            transition: 'background 0.2s'
+          }}
+          onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+          onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.4)'}
+        >
+          ❮ Close
+        </button>
+      )}
+
       {/* ─── User Authentication Section (Guests Only) ─── */}
       {!currentUser && (
         <div className="sidebar-section auth-section">
-          {onClose && (
-            <button 
-              onClick={onClose} 
-              className="sidebar-inner-close-btn"
-              aria-label="Close sidebar"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                background: 'rgba(0, 0, 0, 0.4)',
-                border: '1px solid var(--color-border)',
-                color: 'var(--color-text)',
-                padding: '6px 12px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                marginBottom: '16px',
-                transition: 'background 0.2s'
-              }}
-              onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-              onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.4)'}
-            >
-              ❮ Close
-            </button>
-          )}
           {isOtpStep ? (
             <form onSubmit={handleOtpSubmit} className="auth-form">
               <h3 className="sidebar-title">Verify OTP</h3>
