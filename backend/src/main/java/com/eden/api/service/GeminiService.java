@@ -18,7 +18,6 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @SuppressWarnings("null")
-@ConditionalOnProperty(name = "ai.provider", havingValue = "gemini", matchIfMissing = true)
 public class GeminiService implements AiSearchProvider {
 
     @Value("${gemini.api.key}")
