@@ -60,6 +60,12 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Spring Mail for sending OTP emails -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- H2 In-Memory Database for Offline/Sandbox Integration Tests -->
         <dependency>
             <groupId>com.h2database</groupId>
