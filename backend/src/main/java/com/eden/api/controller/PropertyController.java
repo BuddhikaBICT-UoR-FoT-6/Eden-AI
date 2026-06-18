@@ -17,7 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/properties")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "${FRONTEND_URL:https://eden-ai-frontend.azurewebsites.net}"})
 public class PropertyController {
 
     private final PropertyService propertyService;
@@ -39,5 +39,15 @@ public class PropertyController {
     public ResponseEntity<List<PropertyResponseDTO>> searchByLocation(
             @RequestParam String location) {
         return ResponseEntity.ok(propertyService.getPropertiesByLocation(location));
+    }
+
+    /**
+     * GET /api/properties/suggestions?userId=1
+     * Returns suggested properties based on user history, or default recommendations.
+     */
+    @GetMapping("/suggestions")
+    public ResponseEntity<List<PropertyResponseDTO>> getSuggestions(
+            @RequestParam(required = false) Long userId) {
+        return ResponseEntity.ok(propertyService.getSuggestions(userId));
     }
 }

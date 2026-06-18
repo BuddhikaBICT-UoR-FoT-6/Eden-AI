@@ -1,37 +1,58 @@
-import { useState, useCallback } from 'react';
-import { Property, searchByVibe, getAllProperties } from '../services/api';
+import { useState, useCallback, useEffect } from 'react';
+import { searchByVibe, getAllProperties } from '../services/api';
+import type { Property } from '../services/api';
 
 interface UseVibeSearchReturn {
   results: Property[];
   isLoading: boolean;
   error: string | null;
   hasSearched: boolean;
+  query: string;
   search: (prompt: string) => Promise<void>;
   reset: () => void;
 }
 
 /**
  * Custom React Hook encapsulating all vibe search state and logic.
- *
- * SRP: This hook owns only the AI search workflow — loading state,
- * error handling, and result management.
- *
- * UX Principles:
- * - Shneiderman Feedback: isLoading exposes skeleton loader states.
- * - Error Prevention: error state prevents silent failures from reaching the UI.
  */
 export const useVibeSearch = (): UseVibeSearchReturn => {
   const [results, setResults] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [query, setQuery] = useState('');
+
+  // Pre-populate with all properties on initialization
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoading(true);
+    getAllProperties()
+      .then((data) => {
+        if (isMounted) {
+          setResults(data);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load initial properties', err);
+        if (isMounted) {
+          setError('Unable to load featured properties.');
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const search = useCallback(async (prompt: string) => {
-    if (!prompt.trim()) return;
-
     setIsLoading(true);
     setError(null);
     setHasSearched(true);
+    setQuery(prompt);
 
     try {
       const data = prompt.trim()
@@ -47,10 +68,16 @@ export const useVibeSearch = (): UseVibeSearchReturn => {
   }, []);
 
   const reset = useCallback(() => {
-    setResults([]);
+    // Reset back to all properties rather than empty results
     setError(null);
     setHasSearched(false);
+    setQuery('');
+    setIsLoading(true);
+    getAllProperties()
+      .then(setResults)
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
   }, []);
 
-  return { results, isLoading, error, hasSearched, search, reset };
+  return { results, isLoading, error, hasSearched, query, search, reset };
 };

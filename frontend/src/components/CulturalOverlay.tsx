@@ -1,6 +1,5 @@
 import React from 'react';
 import { detectPropertyCultureTheme } from '../theme/themes';
-import { useTheme } from '../theme/ThemeProvider';
 
 interface CulturalOverlayProps {
   vibes: string[];

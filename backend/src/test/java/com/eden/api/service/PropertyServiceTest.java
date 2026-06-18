@@ -38,6 +38,7 @@ class PropertyServiceTest {
     @Mock private PropertyRepository propertyRepository;
     @Mock private PropertyVibeRepository propertyVibeRepository;
     @Mock private GeminiService geminiService;
+    @Mock private GoogleMapsService googleMapsService;
 
     @InjectMocks
     private PropertyService propertyService;
@@ -123,6 +124,7 @@ class PropertyServiceTest {
         when(geminiService.extractSearchParameters(anyString())).thenReturn(extraction);
         when(propertyRepository.findAll()).thenReturn(List.of(testProperty, nonMatchingProperty));
         when(propertyVibeRepository.findByPropertyId(propertyId)).thenReturn(List.of());
+        when(googleMapsService.searchRealWorldProperties(any(), any())).thenReturn(List.of());
 
         // Act
         List<PropertyResponseDTO> result = propertyService.searchByNaturalLanguage("jungle in Yala");
@@ -151,6 +153,7 @@ class PropertyServiceTest {
         when(geminiService.extractSearchParameters(anyString())).thenReturn(extraction);
         when(propertyRepository.findAll()).thenReturn(List.of(testProperty, cheapVilla));
         when(propertyVibeRepository.findByPropertyId(cheapVilla.getId())).thenReturn(List.of());
+        when(googleMapsService.searchRealWorldProperties(any(), any())).thenReturn(List.of());
 
         // Act — testProperty costs $850, which exceeds the $500 budget
         List<PropertyResponseDTO> result = propertyService.searchByNaturalLanguage("under 500");

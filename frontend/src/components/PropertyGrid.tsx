@@ -1,12 +1,14 @@
 import React from 'react';
 import PropertyCard, { PropertyCardSkeleton } from './PropertyCard';
-import { Property } from '../services/api';
+import type { Property } from '../services/api';
 
 interface PropertyGridProps {
   properties: Property[];
   isLoading: boolean;
   hasSearched: boolean;
   error: string | null;
+  focusedPropertyIds: string[];
+  onFocusProperty: (id: string | null) => void;
 }
 
 const SKELETON_COUNT = 6;
@@ -21,7 +23,7 @@ const SKELETON_COUNT = 6;
  * 4. Results  → responsive card grid
  */
 const PropertyGrid: React.FC<PropertyGridProps> = ({
-  properties, isLoading, hasSearched, error,
+  properties, isLoading, hasSearched, error, focusedPropertyIds, onFocusProperty,
 }) => {
   if (isLoading) {
     return (
@@ -55,46 +57,22 @@ const PropertyGrid: React.FC<PropertyGridProps> = ({
 
   return (
     <>
-      <p className="results-count" aria-live="polite">
-        {properties.length} {properties.length === 1 ? 'property' : 'properties'} found
-      </p>
+      {hasSearched && (
+        <p className="results-count" aria-live="polite">
+          {properties.length} {properties.length === 1 ? 'property' : 'properties'} found
+        </p>
+      )}
       <section className="property-grid" aria-label="Search results">
         {properties.map((property) => (
-          <PropertyCard key={property.id} {...property} />
+          <PropertyCard 
+            key={property.id} 
+            {...property} 
+            isFocused={focusedPropertyIds.includes(property.id)}
+            onFocus={() => onFocusProperty(property.id)}
+            onCloseFocus={() => onFocusProperty(property.id)} // Toggle off by passing the same id, or handled in HomePage
+          />
         ))}
       </section>
-
-      <style>{`
-        .results-count {
-          text-align: center;
-          color: var(--color-text-muted);
-          font-size: 0.9rem;
-          margin-bottom: 12px;
-        }
-
-        .property-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-          gap: 24px;
-          width: 100%;
-          max-width: 1200px;
-          margin: 0 auto;
-        }
-
-        .grid-message {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 14px;
-          padding: 60px 24px;
-          text-align: center;
-          color: var(--color-text-muted);
-        }
-
-        .grid-message-icon { font-size: 2.5rem; }
-        .grid-message p { font-size: 1.05rem; }
-        .error-message { color: var(--color-danger); }
-      `}</style>
     </>
   );
 };

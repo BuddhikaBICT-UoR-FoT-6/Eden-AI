@@ -25,5 +25,6 @@ public class PropertyResponseDTO {
     private String location;
     private BigDecimal pricePerNight;
     private String imageUrl;
+    private String contactDetails;
     private List<String> vibes; // Flattened list of vibe names for the UI
 }

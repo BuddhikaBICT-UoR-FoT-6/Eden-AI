@@ -15,11 +15,15 @@ backend/*.class
 backend/*.jar
 backend/*.war
 
+# Environment Variables / Secrets
+.env
+.env.*
+!.env.example
+backend/src/main/resources/application-local.properties
+
 # Frontend (React / Node)
 frontend/node_modules/
 frontend/dist/
-frontend/.env
-frontend/.env.local
 
 # Logs
 *.log

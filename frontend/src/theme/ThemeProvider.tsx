@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { ThemeId, ThemeConfig, THEMES, detectCalendarTheme } from './themes';
+import type { ThemeId, ThemeConfig } from './themes';
+import { THEMES, detectCalendarTheme } from './themes';
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 

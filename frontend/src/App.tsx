@@ -1,44 +1,291 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
-import ThemeSelector from './components/ThemeSelector';
-import { ThemeProvider } from './theme/ThemeProvider';
+import SearchBar from './components/SearchBar';
+import { useMediaQuery } from './hooks/useMediaQuery';
+import { useTheme } from './theme/ThemeProvider';
+import { useVibeSearch } from './hooks/useVibeSearch';
+import { 
+  getUserHistory, 
+  addUserHistory, 
+  getSuggestions 
+} from './services/api';
+import type { User, SearchHistory, Property } from './services/api';
 import './index.css';
 
 /**
  * App Root
- * SRP: Handles only routing configuration. All page logic lives in page components.
- * ThemeProvider wraps everything so all components can access the theme context.
+ * Implements Responsive Layout (PWA vs Desktop)
  */
 const App: React.FC = () => {
+  const isMobile = useMediaQuery('(max-width: 767px)');
+  const { themeId, setTheme } = useTheme();
+  
+  // Search state hook
+  const searchState = useVibeSearch();
+  const { isLoading, hasSearched, query, search, reset } = searchState;
+
+  // Active mobile navigation tab state ('search' | 'auth_explore' | 'settings')
+  const [activeMobileTab, setActiveMobileTab] = useState<'search' | 'auth_explore' | 'settings'>('search');
+
+  // User state
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('eden-user');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [history, setHistory] = useState<SearchHistory[]>([]);
+  const [suggestions, setSuggestions] = useState<Property[]>([]);
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Toggle theme
+  const toggleTheme = () => {
+    setTheme(themeId === 'light' ? 'dark' : 'light');
+  };
+
+  // Load history and suggestions on user state change
+  useEffect(() => {
+    if (currentUser) {
+      getUserHistory(currentUser.id).then(setHistory).catch(console.error);
+      if (currentUser.consent) {
+        getSuggestions(currentUser.id).then(setSuggestions).catch(console.error);
+      } else {
+        setSuggestions([]);
+      }
+      setIsSidebarOpen(true);
+    } else {
+      setHistory([]);
+      setSuggestions([]);
+      // Only close sidebar for guests if they have already searched, otherwise keep it open on initial load
+      if (hasSearched) {
+        setIsSidebarOpen(false);
+      }
+    }
+  }, [currentUser, hasSearched]);
+
+  // Listen to browser back/forward buttons to sync search state
+  useEffect(() => {
+    const handlePopState = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const q = urlParams.get('q');
+      if (q) {
+        search(q);
+      } else {
+        reset();
+        // If returning to initial screen, keep sidebar open for guests, closed for users
+        setIsSidebarOpen(!!currentUser);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [search, reset, currentUser]);
+
+  // Wrap search function to also log query history in the database if logged in
+  const handleSearch = async (prompt: string) => {
+    setIsSidebarOpen(false);
+    setActiveMobileTab('search');
+    
+    // Update URL so the browser "Back" button works
+    const newUrl = `?q=${encodeURIComponent(prompt)}`;
+    if (window.location.search !== newUrl) {
+      window.history.pushState({ search: prompt }, '', newUrl);
+    }
+
+    await search(prompt);
+    if (currentUser) {
+      try {
+        await addUserHistory(currentUser.id, prompt);
+        const updatedHistory = await getUserHistory(currentUser.id);
+        setHistory(updatedHistory);
+        if (currentUser.consent) {
+          const updatedSuggestions = await getSuggestions(currentUser.id);
+          setSuggestions(updatedSuggestions);
+        }
+      } catch (err) {
+        console.error('Failed to log search query', err);
+      }
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('eden-user');
+    setCurrentUser(null);
+    reset();
+  };
+
+  const handleLogin = (user: User) => {
+    localStorage.setItem('eden-user', JSON.stringify(user));
+    setCurrentUser(user);
+  };
+
+  const handleConsentChange = (consent: boolean) => {
+    if (currentUser) {
+      const updatedUser = { ...currentUser, consent };
+      localStorage.setItem('eden-user', JSON.stringify(updatedUser));
+      setCurrentUser(updatedUser);
+    }
+  };
+
   return (
-    <ThemeProvider>
-      <BrowserRouter>
-        <div className="app-root">
-          {/* Navigation */}
+    <BrowserRouter>
+      <div className={`app-root ${isMobile ? 'mobile-layout' : 'desktop-layout'}`}>
+        
+        {/* Top Navigation - Desktop Only */}
+        {!isMobile && (
           <nav className="navbar" role="navigation" aria-label="Main navigation">
-            <a href="/" className="navbar-brand" aria-label="Eden AI Home">
-              <span className="navbar-logo">🌴</span>
-              <span className="navbar-name">Eden <strong>AI</strong></span>
-            </a>
-            <p className="navbar-tagline">Sri Lanka's Vibe-Based Travel Finder</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <a href="/" className="navbar-brand" aria-label="Eden AI Home" onClick={(e) => { e.preventDefault(); reset(); }}>
+                <img src="/eden_logo.png" alt="Eden AI Logo" className="navbar-logo-img" />
+                <span className="navbar-name">Eden <strong>AI</strong></span>
+              </a>
+              
+              {/* Sign In Button for Guests (visible when sidebar is closed) */}
+              {!currentUser && !isSidebarOpen && (
+                <button 
+                  className="yellow-blink-btn" 
+                  onClick={() => setIsSidebarOpen(true)}
+                  aria-label="Sign in to save searches"
+                >
+                  Sign In / Register
+                </button>
+              )}
+            </div>
+            
+            {hasSearched ? (
+              <SearchBar 
+                isNavbarMode={true} 
+                onSearch={handleSearch} 
+                isLoading={isLoading} 
+                onExit={reset} 
+                initialValue={query} 
+              />
+            ) : (
+              <p className="navbar-tagline">Sri Lanka's Vibe-Based Travel Finder</p>
+            )}
+
+            <button
+              className="nav-theme-toggle-btn"
+              onClick={toggleTheme}
+              title={`Switch to ${themeId === 'light' ? 'Dark' : 'Light'} Mode`}
+              aria-label="Toggle display theme"
+            >
+              {themeId === 'light' ? '🌙' : '☀️'}
+            </button>
           </nav>
+        )}
 
-          {/* Pages */}
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-          </Routes>
+        {/* Mobile Header */}
+        {isMobile && (
+          <header className="mobile-header glass-card">
+             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+               <a href="/" className="navbar-brand" aria-label="Eden AI Home" style={{ display: 'flex', alignItems: 'center', gap: '8px' }} onClick={(e) => { e.preventDefault(); reset(); }}>
+                 <img src="/eden_logo.png" alt="Eden AI Logo" className="navbar-logo-img" style={{ height: '32px', width: '32px' }} />
+                 {!hasSearched && <span className="navbar-name" style={{ fontSize: '1.2rem' }}>Eden <strong>AI</strong></span>}
+               </a>
+               {!currentUser && activeMobileTab !== 'auth_explore' && (
+                  <button 
+                    className="yellow-blink-btn" 
+                    onClick={() => setActiveMobileTab('auth_explore')}
+                    style={{ padding: '4px 8px', fontSize: '0.7rem' }}
+                  >
+                    Sign In
+                  </button>
+               )}
+             </div>
 
-          {/* Footer */}
-          <footer className="footer" role="contentinfo">
-            <p>© 2026 Eden AI · Crafted for the Sri Lankan Tourism Market</p>
+             {hasSearched && (
+               <SearchBar 
+                 isNavbarMode={true} 
+                 onSearch={handleSearch} 
+                 isLoading={isLoading} 
+                 onExit={reset} 
+                 initialValue={query} 
+               />
+             )}
+
+             <button
+               className="nav-theme-toggle-btn"
+               onClick={toggleTheme}
+               title={`Switch to ${themeId === 'light' ? 'Dark' : 'Light'} Mode`}
+               aria-label="Toggle display theme"
+               style={{ marginLeft: 'auto' }}
+             >
+               {themeId === 'light' ? '🌙' : '☀️'}
+             </button>
+          </header>
+        )}
+
+        {/* Main Content Area */}
+        <Routes>
+          <Route path="/" element={
+            <HomePage 
+              searchState={{ ...searchState, search: handleSearch }} 
+              userProps={{
+                currentUser,
+                onLogin: handleLogin,
+                onLogout: handleLogout,
+                history,
+                suggestions,
+                onHistoryClick: handleSearch,
+                onConsentChange: handleConsentChange,
+              }}
+              isSidebarOpen={isSidebarOpen}
+              setIsSidebarOpen={setIsSidebarOpen}
+              activeMobileTab={activeMobileTab}
+              setActiveMobileTab={setActiveMobileTab}
+            />
+          } />
+        </Routes>
+
+        {/* Footer / Bottom Bar - Desktop Only */}
+        {!isMobile && (
+          <footer className="app-bottom-bar" role="contentinfo">
+            <p>© 2026 Eden AI · All Rights Reserved</p>
           </footer>
-        </div>
+        )}
 
-        {/* Floating Theme Selector — available on all pages */}
-        <ThemeSelector />
-      </BrowserRouter>
-    </ThemeProvider>
+        {/* Mobile Navigation Bar - Mobile Only */}
+        {isMobile && (
+          <nav className="mobile-bottom-nav" role="navigation" aria-label="Mobile Navigation">
+            <button 
+              className={`mobile-bottom-nav-item ${activeMobileTab === 'search' ? 'active' : ''}`}
+              onClick={() => setActiveMobileTab('search')}
+              aria-label="Search vibe"
+              aria-pressed={activeMobileTab === 'search'}
+            >
+              <img src="/icon_search.png" alt="" className="mobile-bottom-nav-item-icon" />
+              <span className="mobile-bottom-nav-item-label">Search</span>
+            </button>
+            
+            <button 
+              className={`mobile-bottom-nav-item ${activeMobileTab === 'auth_explore' ? 'active' : ''}`}
+              onClick={() => setActiveMobileTab('auth_explore')}
+              aria-label={currentUser ? 'Explore recommendations' : 'Login or Register'}
+              aria-pressed={activeMobileTab === 'auth_explore'}
+            >
+              <img 
+                src={currentUser ? '/icon_explore.png' : '/icon_login.png'} 
+                alt="" 
+                className="mobile-bottom-nav-item-icon" 
+              />
+              <span className="mobile-bottom-nav-item-label">
+                {currentUser ? 'Explore' : 'Sign In'}
+              </span>
+            </button>
+
+            <button 
+              className={`mobile-bottom-nav-item ${activeMobileTab === 'settings' ? 'active' : ''}`}
+              onClick={() => setActiveMobileTab('settings')}
+              aria-label="Settings"
+              aria-pressed={activeMobileTab === 'settings'}
+            >
+              <img src="/icon_settings.png" alt="" className="mobile-bottom-nav-item-icon" />
+              <span className="mobile-bottom-nav-item-label">Settings</span>
+            </button>
+          </nav>
+        )}
+      </div>
+    </BrowserRouter>
   );
 };
 
