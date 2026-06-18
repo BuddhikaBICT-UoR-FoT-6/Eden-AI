@@ -305,6 +305,7 @@ img {
   display: flex;
   flex-direction: column;
   min-width: 0; /* Prevent horizontal overflow */
+  position: relative;
 }
 
 /* Compact Hero for Mobile */
