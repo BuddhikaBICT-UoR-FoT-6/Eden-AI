@@ -71,10 +71,15 @@ The Gemini AI layer extracts structured parameters (location, vibe, budget) from
 | Layer | Class | Responsibility |
 |---|---|---|
 | Controller | `AiVibeSearchController` | AI search HTTP endpoint only |
-| Controller | `PropertyController` | Standard CRUD endpoints only |
-| Service | `PropertyService` | Business logic, orchestration, mapping |
-| Service | `GeminiService` | Gemini API communication |
+| Controller | `PropertyController` | Standard CRUD and geocoding properties endpoints |
+| Controller | `UserController` | Multi-step OTP authentication and profile management endpoints |
+| Service | `PropertyService` | Business logic, location resolution, orchestration, mapping |
+| Service | `GeminiService` | Gemini API communication and dynamic prompt dataset loop |
+| Service | `GoogleMapsService` | Google Maps API coordinates geocoding and proximity search |
+| Service | `OtpService` | OTP generation, validation, and session tracking |
+| Service | `EmailService` | SMTP-based real and simulated mail dispatcher for OTP delivery |
 | Repository | `PropertyRepository` | Database queries |
+| Repository | `OtpRepository` | Database tracking of active OTP verification sessions |
 | Entity | `PropertyVibe` | Junction table with AI confidence score |
 | Config | `DataSeeder` | Development seed data |
 | Exception | `GlobalExceptionHandler` | Clean JSON error responses |
@@ -86,14 +91,16 @@ The Gemini AI layer extracts structured parameters (location, vibe, budget) from
 | Layer | Technology | Version |
 |---|---|---|
 | **Frontend** | React + TypeScript | 19.x |
-| **Build Tool** | Vite | 8.x |
-| **Styling** | Vanilla CSS + CSS Custom Properties | — |
+| **Build Tool** | Vite | 5.x |
+| **Styling** | Vanilla CSS + Lucide Icons | — |
 | **HTTP Client** | Axios | 1.x |
 | **Backend** | Spring Boot | 3.2.5 |
 | **Language** | Java | 17 (LTS) |
 | **ORM** | Spring Data JPA / Hibernate | — |
 | **Database** | PostgreSQL | 15 |
 | **AI** | Google Gemini 1.5 Flash | Structured Outputs |
+| **Maps & Geo** | Google Maps API | Geocoding & Proximity Searches |
+| **Email/SMTP** | Spring Boot Starter Mail | OTP Delivery |
 | **Testing** | JUnit 5 + Mockito + Selenium | — |
 | **Containerization** | Docker + Docker Compose | — |
 | **Cloud** | Microsoft Azure | App Service + SWA + PostgreSQL |
@@ -107,21 +114,21 @@ Eden AI/
 ├── backend/                          # Spring Boot REST API
 │   ├── src/main/java/com/eden/api/
 │   │   ├── config/                   # DataSeeder
-│   │   ├── controller/               # AiVibeSearchController, PropertyController
+│   │   ├── controller/               # AiVibeSearchController, PropertyController, UserController
 │   │   ├── dto/                      # PropertyResponseDTO, SearchExtractionDTO
-│   │   ├── entity/                   # Property, Vibe, PropertyVibe, PropertyVibeId
+│   │   ├── entity/                   # Property, Vibe, PropertyVibe, PropertyVibeId, User, OtpSession
 │   │   ├── exception/                # GlobalExceptionHandler, ResourceNotFoundException
-│   │   ├── repository/               # PropertyRepository, VibeRepository, PropertyVibeRepository
-│   │   └── service/                  # PropertyService, GeminiService
+│   │   ├── repository/               # PropertyRepository, VibeRepository, PropertyVibeRepository, UserRepository, OtpRepository
+│   │   └── service/                  # PropertyService, GeminiService, GoogleMapsService, OtpService, EmailService
 │   ├── src/test/java/com/eden/api/
 │   │   ├── integration/              # PropertyApiIntegrationTest
 │   │   └── service/                  # PropertyServiceTest, GeminiServiceTest
 │   ├── Dockerfile
 │   └── pom.xml
 │
-├── frontend/                         # React + TypeScript
+│├── frontend/                         # React + TypeScript
 │   ├── src/
-│   │   ├── components/               # SearchBar, PropertyCard, PropertyGrid
+│   │   ├── components/               # SearchBar, PropertyCard, PropertyGrid, FeaturedStaysSidebar, UserSettingsModal, DynamicSkyBackground
 │   │   ├── hooks/                    # useVibeSearch
 │   │   ├── pages/                    # HomePage
 │   │   ├── services/                 # api.ts
@@ -224,6 +231,14 @@ Filters properties by geographical location (case-insensitive).
 |---|---|---|---|
 | `location` | string | ✅ | `Mirissa` |
 
+#### `GET /api/properties/featured?lat={lat}&lng={lng}`
+Fetches top-rated featured properties with proximity-based sort if latitude and longitude are supplied, falling back to general high-rated properties otherwise.
+
+| Parameter | Type | Required | Example |
+|---|---|---|---|
+| `lat` | number | ❌ | `6.8622` |
+| `lng` | number | ❌ | `80.7011` |
+
 #### `GET /api/ai/search?prompt={prompt}`
 **AI-powered vibe search.** Sends the prompt to Gemini, extracts structured parameters, and returns filtered results.
 
@@ -235,6 +250,30 @@ Filters properties by geographical location (case-insensitive).
 ```bash
 curl "http://localhost:8080/api/ai/search?prompt=beachfront+surf+chill+villa+in+Mirissa"
 ```
+
+#### `GET /api/ai/dataset/export`
+Exports search query telemetry logged in the database to a standard JSONL document.
+
+#### `POST /api/users/login/initiate`
+Initiates a secure 2-step login process, sending a 6-digit OTP verification code to the registered email.
+
+#### `POST /api/users/login/verify`
+Completes login authentication using the 6-digit OTP code sent to the user.
+
+#### `POST /api/users/register/initiate`
+Initiates new user registration, validating username/email uniqueness and generating a verification OTP.
+
+#### `POST /api/users/register/verify`
+Completes account registration by validating the supplied verification OTP.
+
+#### `PUT /api/users/profile/name`
+Updates the authenticated user's profile name.
+
+#### `POST /api/users/profile/password/initiate`
+Initiates a password reset cycle, sending an email verification code.
+
+#### `POST /api/users/profile/password/verify`
+Verifies the profile update code and updates the password details securely.
 
 ---
 
