@@ -39,6 +39,7 @@ public class PropertyService {
     private final SearchHistoryRepository searchHistoryRepository;
     private final AiSearchProvider aiSearchProvider;
     private final GoogleMapsService googleMapsService;
+    private final DatasetService datasetService;
 
     /**
      * Retrieves all properties from the database.
@@ -102,8 +103,16 @@ public class PropertyService {
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
 
+        // If a specific location was requested but no seeded properties match it, discard seeded results.
+        // This prevents unrelated seeded data (e.g. Yala, Mirissa) from appearing for "Hotels in Balangoda".
+        boolean locationSpecified = finalExtraction.getLocation() != null && !finalExtraction.getLocation().isBlank();
+        if (locationSpecified && dbResults.stream().noneMatch(p ->
+                p.getLocation().equalsIgnoreCase(finalExtraction.getLocation()))) {
+            dbResults = java.util.Collections.emptyList();
+        }
+
         // Sort results by vibe priority match (higher priority vibes first)
-        if (finalExtraction.getVibes() != null && !finalExtraction.getVibes().isEmpty()) {
+        if (!dbResults.isEmpty() && finalExtraction.getVibes() != null && !finalExtraction.getVibes().isEmpty()) {
             dbResults.sort((p1, p2) -> {
                 double score1 = calculatePriorityScore(p1, finalExtraction.getVibes());
                 double score2 = calculatePriorityScore(p2, finalExtraction.getVibes());
@@ -120,13 +129,15 @@ public class PropertyService {
                     .map(PropertyResponseDTO::getName)
                     .map(String::toLowerCase)
                     .collect(Collectors.toList());
-                    
             for (PropertyResponseDTO p : realWorldResults) {
                 if (!dbNames.contains(p.getName().toLowerCase())) {
                     combined.add(p);
                 }
             }
         }
+        // Async fire-and-forget: append this search to the Drive dataset for continuous training
+        datasetService.appendSearchRecord(prompt, finalExtraction, combined.size());
+
         return combined;
     }
 
@@ -229,7 +240,7 @@ public class PropertyService {
 
         String lower = prompt.toLowerCase();
 
-        // 1. Extract Location
+        // 1. Extract Location — known cities first, then generic "in <Location>" pattern
         String location = null;
         if (lower.contains("yala")) location = "Yala";
         else if (lower.contains("mirissa")) location = "Mirissa";
@@ -243,6 +254,15 @@ public class PropertyService {
         else if (lower.contains("colombo")) location = "Colombo";
         else if (lower.contains("sigiriya")) location = "Sigiriya";
         else if (lower.contains("nuwara")) location = "Nuwara Eliya";
+        else {
+            // Generic fallback: extract word(s) after "in" (e.g. "Hotels in Balangoda")
+            java.util.regex.Matcher inMatcher = java.util.regex.Pattern
+                    .compile("\\bin\\s+([A-Za-z][A-Za-z\\s]{1,30}?)(?:\\s*[,.]|$)")
+                    .matcher(prompt.trim());
+            if (inMatcher.find()) {
+                location = inMatcher.group(1).trim();
+            }
+        }
 
         // 2. Extract Vibes
         List<String> vibes = new java.util.ArrayList<>();

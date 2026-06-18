@@ -5,19 +5,15 @@ import com.eden.api.dto.SearchExtractionDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 @Service
 @RequiredArgsConstructor
@@ -25,26 +21,43 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 @ConditionalOnProperty(name = "ai.provider", havingValue = "gemini", matchIfMissing = true)
 public class GeminiService implements AiSearchProvider {
 
-    // Pulls the API key securely from application.properties
     @Value("${gemini.api.key}")
     private String apiKey;
 
-    private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper;
+    private final DatasetService datasetService;
+    private final GoogleMapsService googleMapsService;
+    private final RestTemplate restTemplate = new RestTemplate();
 
+    private static final String GEMINI_URL =
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=";
+
+    /**
+     * Extracts location, vibes, and budget from a raw user prompt.
+     * Injects the most recent few-shot examples from the Drive dataset into the prompt
+     * so that Gemini's extraction accuracy improves as real search data accumulates.
+     */
+    @Override
     @SuppressWarnings("unchecked")
     public SearchExtractionDTO extractSearchParameters(String prompt) {
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
+        // Load recent examples from dataset — improves extraction over time for free
+        List<String> fewShots = datasetService.loadFewShotExamples();
 
-        // Escape quotes to prevent breaking the JSON payload
+        StringBuilder fewShotBlock = new StringBuilder();
+        if (!fewShots.isEmpty()) {
+            fewShotBlock.append("Here are recent examples of correct extractions to guide you:\\n");
+            for (String ex : fewShots) {
+                fewShotBlock.append("- ").append(ex).append("\\n");
+            }
+            fewShotBlock.append("\\n");
+        }
+
         String safePrompt = prompt.replace("\"", "\\\"");
+        String safeFewShots = fewShotBlock.toString().replace("\"", "\\\"");
 
-        // Construct the payload using Java 17 Text Blocks and Gemini's Structured Outputs Schema
         String requestBody = """
         {
-          "contents": [{
-            "parts": [{"text": "Extract the location, vibes, and max budget from this user query: \\"%s\\""}]
-          }],
+          "contents": [{"parts": [{"text": "%s%sExtract the location, vibes, and max budget from this user query: \\"%s\\""}]}],
           "generationConfig": {
             "responseMimeType": "application/json",
             "responseSchema": {
@@ -57,131 +70,38 @@ public class GeminiService implements AiSearchProvider {
             }
           }
         }
-        """.formatted(safePrompt);
+        """.formatted(safeFewShots, "", safePrompt);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
-
         try {
-            // Make the synchronous POST request
-            Map<String, Object> response = restTemplate.postForObject(url, entity, Map.class);
-            
-            // Navigate the nested JSON response to extract the actual text result
+            Map<String, Object> response = restTemplate.postForObject(
+                    GEMINI_URL + apiKey, new HttpEntity<>(requestBody, headers), Map.class);
+
             List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
             Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
             List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
             String jsonText = (String) parts.get(0).get("text");
 
-            // Convert the strict JSON string directly into our Java Record/Class
-            return objectMapper.readValue(jsonText, SearchExtractionDTO.class);
-            
+            SearchExtractionDTO result = objectMapper.readValue(jsonText, SearchExtractionDTO.class);
+            System.out.println("🤖 Gemini extracted: " + result + " (few-shots used: " + fewShots.size() + ")");
+            return result;
+
         } catch (Exception e) {
             System.err.println("Gemini extraction failed: " + e.getMessage());
-            // Return an empty object so the app doesn't crash, it just falls back to default search
             return new SearchExtractionDTO();
         }
     }
 
+    /**
+     * Delegates to GoogleMapsService for real, location-accurate property results.
+     * Gemini is NOT used to hallucinate property data — only for NLP extraction.
+     */
     @Override
-    @SuppressWarnings("unchecked")
     public List<PropertyResponseDTO> searchRealWorldProperties(String prompt) {
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
-
-        String safePrompt = prompt.replace("\"", "\\\"");
-
-        String requestBody = """
-        {
-          "contents": [{
-            "parts": [{"text": "Search for real-world hotels, resorts, or villas in Sri Lanka matching the query: \\"%s\\". Return a list of actual hotels/villas/resorts with realistic prices, descriptions, vibes, contact details, google map ratings (0.0 to 5.0), google map reviews count, and imageUrls."}]
-          }],
-          "generationConfig": {
-            "responseMimeType": "application/json",
-            "responseSchema": {
-              "type": "OBJECT",
-              "properties": {
-                "properties": {
-                  "type": "ARRAY",
-                  "items": {
-                    "type": "OBJECT",
-                    "properties": {
-                      "name": {"type": "STRING"},
-                      "description": {"type": "STRING"},
-                      "location": {"type": "STRING"},
-                      "pricePerNight": {"type": "NUMBER"},
-                      "imageUrl": {"type": "STRING"},
-                      "contactDetails": {"type": "STRING"},
-                      "rating": {"type": "NUMBER"},
-                      "reviewsCount": {"type": "INTEGER"},
-                      "vibes": {"type": "ARRAY", "items": {"type": "STRING"}}
-                    },
-                    "required": ["name", "description", "location", "pricePerNight", "imageUrl", "contactDetails", "rating", "reviewsCount", "vibes"]
-                  }
-                }
-              },
-              "required": ["properties"]
-            }
-          }
-        }
-        """.formatted(safePrompt);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
-
-        try {
-            System.out.println("🤖 Querying Gemini for Real-World Properties: " + prompt);
-            Map<String, Object> response = restTemplate.postForObject(url, entity, Map.class);
-            
-            List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
-            Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
-            List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
-            String jsonText = (String) parts.get(0).get("text");
-
-            RealWorldPropertiesWrapper wrapper = objectMapper.readValue(jsonText, RealWorldPropertiesWrapper.class);
-            
-            List<PropertyResponseDTO> results = new ArrayList<>();
-            if (wrapper != null && wrapper.properties != null) {
-                for (RealWorldPropertyDTO p : wrapper.properties) {
-                    results.add(PropertyResponseDTO.builder()
-                            .id(UUID.randomUUID())
-                            .name(p.name)
-                            .description(p.description)
-                            .location(p.location)
-                            .pricePerNight(p.pricePerNight)
-                            .imageUrl(p.imageUrl)
-                            .contactDetails(p.contactDetails)
-                            .rating(p.rating != null ? p.rating : 4.5)
-                            .reviewsCount(p.reviewsCount != null ? p.reviewsCount : 120)
-                            .vibes(p.vibes)
-                            .build());
-                }
-            }
-            return results;
-            
-        } catch (Exception e) {
-            System.err.println("Gemini real-world property search failed: " + e.getMessage());
-            e.printStackTrace();
-            return new ArrayList<>();
-        }
-    }
-
-    // Static helper classes for JSON mapping
-    public static class RealWorldPropertiesWrapper {
-        public List<RealWorldPropertyDTO> properties;
-    }
-
-    public static class RealWorldPropertyDTO {
-        public String name;
-        public String description;
-        public String location;
-        public BigDecimal pricePerNight;
-        public String imageUrl;
-        public String contactDetails;
-        public Double rating;
-        public Integer reviewsCount;
-        public List<String> vibes;
+        // This method is now handled entirely by GoogleMapsService via PropertyService.
+        // Gemini's job is extraction only.
+        return List.of();
     }
 }
