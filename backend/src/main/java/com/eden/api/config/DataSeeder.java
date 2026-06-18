@@ -29,18 +29,44 @@ public class DataSeeder implements CommandLineRunner {
             vibeRepository.deleteAll();
         }
 
-        if (propertyRepository.count() > 0) return; // Don't seed if data exists
+        // Force re-seed if the rating of the first property is null (since we just added the fields)
+        boolean needsReseed = false;
+        if (propertyRepository.count() > 0) {
+            List<Property> current = propertyRepository.findAll();
+            if (current.isEmpty() || current.get(0).getRating() == null) {
+                needsReseed = true;
+            }
+        }
+
+        if (needsReseed) {
+            System.out.println("🔄 New fields (rating/reviewsCount) detected. Clearing old stays to seed new data...");
+            propertyVibeRepository.deleteAll();
+            propertyRepository.deleteAll();
+        } else if (propertyRepository.count() > 0) {
+            return; // Don't seed if data exists and is up to date
+        }
 
         // 1. Create Vibes
-        Vibe jungle = Vibe.builder().name("Jungle Luxury").description("High-end villas surrounded by lush nature").build();
-        Vibe surf = Vibe.builder().name("Surf Chill").description("Relaxed atmosphere near world-class breaks").build();
-        Vibe colonial = Vibe.builder().name("Colonial Charm").description("Historic architecture with modern comfort").build();
-        Vibe beachfront = Vibe.builder().name("Beachfront Zen").description("Tranquil stays directly on the sandy shores").build();
-        Vibe safari = Vibe.builder().name("Safari Wild").description("Thrilling wildlife stays near national parks").build();
-        Vibe highland = Vibe.builder().name("Highland Escape").description("Cool mountain retreats amid tea plantations").build();
-        Vibe party = Vibe.builder().name("Party Vibe").description("Lively spots with active nightlife and social scenes").build();
-        Vibe wellness = Vibe.builder().name("Wellness Retreat").description("Holistic rejuvenation, spa, and yoga sanctuaries").build();
-        vibeRepository.saveAll(List.of(jungle, surf, colonial, beachfront, safari, highland, party, wellness));
+        if (vibeRepository.count() == 0) {
+            Vibe jungle = Vibe.builder().name("Jungle Luxury").description("High-end villas surrounded by lush nature").build();
+            Vibe surf = Vibe.builder().name("Surf Chill").description("Relaxed atmosphere near world-class breaks").build();
+            Vibe colonial = Vibe.builder().name("Colonial Charm").description("Historic architecture with modern comfort").build();
+            Vibe beachfront = Vibe.builder().name("Beachfront Zen").description("Tranquil stays directly on the sandy shores").build();
+            Vibe safari = Vibe.builder().name("Safari Wild").description("Thrilling wildlife stays near national parks").build();
+            Vibe highland = Vibe.builder().name("Highland Escape").description("Cool mountain retreats amid tea plantations").build();
+            Vibe party = Vibe.builder().name("Party Vibe").description("Lively spots with active nightlife and social scenes").build();
+            Vibe wellness = Vibe.builder().name("Wellness Retreat").description("Holistic rejuvenation, spa, and yoga sanctuaries").build();
+            vibeRepository.saveAll(List.of(jungle, surf, colonial, beachfront, safari, highland, party, wellness));
+        }
+
+        Vibe jungle = vibeRepository.findByNameIgnoreCase("Jungle Luxury").orElse(null);
+        Vibe surf = vibeRepository.findByNameIgnoreCase("Surf Chill").orElse(null);
+        Vibe colonial = vibeRepository.findByNameIgnoreCase("Colonial Charm").orElse(null);
+        Vibe beachfront = vibeRepository.findByNameIgnoreCase("Beachfront Zen").orElse(null);
+        Vibe safari = vibeRepository.findByNameIgnoreCase("Safari Wild").orElse(null);
+        Vibe highland = vibeRepository.findByNameIgnoreCase("Highland Escape").orElse(null);
+        Vibe party = vibeRepository.findByNameIgnoreCase("Party Vibe").orElse(null);
+        Vibe wellness = vibeRepository.findByNameIgnoreCase("Wellness Retreat").orElse(null);
 
         // 2. Create Properties
         Property villa1 = Property.builder()
@@ -50,6 +76,8 @@ public class DataSeeder implements CommandLineRunner {
                 .pricePerNight(new BigDecimal("850.00"))
                 .imageUrl("https://images.unsplash.com/photo-1540541338287-41700207dee6?w=800&q=80")
                 .contactDetails("+94 47 222 3456 | reservations@wildcoastlodge.lk")
+                .rating(4.8)
+                .reviewsCount(320)
                 .build();
 
         Property villa2 = Property.builder()
@@ -59,6 +87,8 @@ public class DataSeeder implements CommandLineRunner {
                 .pricePerNight(new BigDecimal("120.00"))
                 .imageUrl("https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80")
                 .contactDetails("+94 41 123 4567 | surf@mirissa.lk")
+                .rating(4.5)
+                .reviewsCount(88)
                 .build();
 
         Property villa3 = Property.builder()
@@ -68,6 +98,8 @@ public class DataSeeder implements CommandLineRunner {
                 .pricePerNight(new BigDecimal("350.00"))
                 .imageUrl("https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80")
                 .contactDetails("+94 91 224 4321 | stay@gallefortvilla.lk")
+                .rating(4.7)
+                .reviewsCount(142)
                 .build();
 
         Property villa4 = Property.builder()
@@ -77,6 +109,8 @@ public class DataSeeder implements CommandLineRunner {
                 .pricePerNight(new BigDecimal("680.00"))
                 .imageUrl("https://images.unsplash.com/photo-1563911302283-d2bc129e7570?w=800&q=80")
                 .contactDetails("+94 11 230 3888 | info@teatrails.lk")
+                .rating(4.9)
+                .reviewsCount(215)
                 .build();
 
         Property villa5 = Property.builder()
@@ -86,6 +120,8 @@ public class DataSeeder implements CommandLineRunner {
                 .pricePerNight(new BigDecimal("85.00"))
                 .imageUrl("https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=800&q=80")
                 .contactDetails("+94 63 224 8100 | waves@arugambaycabanas.lk")
+                .rating(4.4)
+                .reviewsCount(95)
                 .build();
 
         Property villa6 = Property.builder()
@@ -95,6 +131,8 @@ public class DataSeeder implements CommandLineRunner {
                 .pricePerNight(new BigDecimal("220.00"))
                 .imageUrl("https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&q=80")
                 .contactDetails("+94 57 222 8900 | info@ellacanopy.lk")
+                .rating(4.8)
+                .reviewsCount(180)
                 .build();
 
         Property villa7 = Property.builder()
@@ -104,6 +142,8 @@ public class DataSeeder implements CommandLineRunner {
                 .pricePerNight(new BigDecimal("520.00"))
                 .imageUrl("https://images.unsplash.com/photo-1544644181-1484b3fdfc62?w=800&q=80")
                 .contactDetails("+94 81 222 8000 | reservations@santani.lk")
+                .rating(4.9)
+                .reviewsCount(250)
                 .build();
 
         Property villa8 = Property.builder()
@@ -113,6 +153,8 @@ public class DataSeeder implements CommandLineRunner {
                 .pricePerNight(new BigDecimal("310.00"))
                 .imageUrl("https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&q=80")
                 .contactDetails("+94 34 227 5000 | reservations@beachhousebentota.lk")
+                .rating(4.7)
+                .reviewsCount(110)
                 .build();
 
         Property villa9 = Property.builder()
@@ -122,6 +164,8 @@ public class DataSeeder implements CommandLineRunner {
                 .pricePerNight(new BigDecimal("105.00"))
                 .imageUrl("https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&q=80")
                 .contactDetails("+94 91 555 4321 | party@hikkaduwaresort.lk")
+                .rating(4.3)
+                .reviewsCount(75)
                 .build();
 
         propertyRepository.saveAll(List.of(villa1, villa2, villa3, villa4, villa5, villa6, villa7, villa8, villa9));

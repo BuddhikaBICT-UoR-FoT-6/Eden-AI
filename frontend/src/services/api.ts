@@ -22,6 +22,8 @@ export interface Property {
   pricePerNight: number;
   imageUrl: string;
   contactDetails?: string;
+  rating?: number;
+  reviewsCount?: number;
   vibes: string[];
 }
 

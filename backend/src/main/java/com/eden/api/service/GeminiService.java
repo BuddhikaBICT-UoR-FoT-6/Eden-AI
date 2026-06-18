@@ -94,7 +94,7 @@ public class GeminiService implements AiSearchProvider {
         String requestBody = """
         {
           "contents": [{
-            "parts": [{"text": "Search for real-world hotels, resorts, or villas in Sri Lanka matching the query: \\"%s\\". Return a list of actual hotels/villas/resorts with realistic prices, descriptions, vibes, contact details, and imageUrls."}]
+            "parts": [{"text": "Search for real-world hotels, resorts, or villas in Sri Lanka matching the query: \\"%s\\". Return a list of actual hotels/villas/resorts with realistic prices, descriptions, vibes, contact details, google map ratings (0.0 to 5.0), google map reviews count, and imageUrls."}]
           }],
           "generationConfig": {
             "responseMimeType": "application/json",
@@ -112,9 +112,11 @@ public class GeminiService implements AiSearchProvider {
                       "pricePerNight": {"type": "NUMBER"},
                       "imageUrl": {"type": "STRING"},
                       "contactDetails": {"type": "STRING"},
+                      "rating": {"type": "NUMBER"},
+                      "reviewsCount": {"type": "INTEGER"},
                       "vibes": {"type": "ARRAY", "items": {"type": "STRING"}}
                     },
-                    "required": ["name", "description", "location", "pricePerNight", "imageUrl", "contactDetails", "vibes"]
+                    "required": ["name", "description", "location", "pricePerNight", "imageUrl", "contactDetails", "rating", "reviewsCount", "vibes"]
                   }
                 }
               },
@@ -151,6 +153,8 @@ public class GeminiService implements AiSearchProvider {
                             .pricePerNight(p.pricePerNight)
                             .imageUrl(p.imageUrl)
                             .contactDetails(p.contactDetails)
+                            .rating(p.rating != null ? p.rating : 4.5)
+                            .reviewsCount(p.reviewsCount != null ? p.reviewsCount : 120)
                             .vibes(p.vibes)
                             .build());
                 }
@@ -176,6 +180,8 @@ public class GeminiService implements AiSearchProvider {
         public BigDecimal pricePerNight;
         public String imageUrl;
         public String contactDetails;
+        public Double rating;
+        public Integer reviewsCount;
         public List<String> vibes;
     }
 }

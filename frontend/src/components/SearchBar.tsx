@@ -216,7 +216,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
         <style>{`
           .search-bar-navbar-wrapper {
             flex: 1;
-            max-width: 580px;
+            width: 580px;
+            max-width: 100%;
+            justify-self: center;
             margin: 0 20px;
           }
           .search-form-navbar { width: 100%; }

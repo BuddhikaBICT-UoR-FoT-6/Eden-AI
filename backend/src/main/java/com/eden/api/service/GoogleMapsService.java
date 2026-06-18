@@ -56,6 +56,7 @@ public class GoogleMapsService {
                 String name = place.path("name").asText();
                 String address = place.path("formatted_address").asText();
                 double rating = place.path("rating").asDouble(0.0);
+                int reviewsCount = place.path("user_ratings_total").asInt(0);
                 
                 // Get a photo if available
                 String imageUrl = "https://images.unsplash.com/photo-1540541338287-41700207dee6?q=80&w=800"; // fallback
@@ -68,11 +69,13 @@ public class GoogleMapsService {
                 results.add(PropertyResponseDTO.builder()
                         .id(UUID.randomUUID())
                         .name(name)
-                        .description("Rating: " + rating + " ⭐. A highly rated property found via Google Maps.")
+                        .description("A highly rated property found via Google Maps.")
                         .location(address)
                         .pricePerNight(BigDecimal.valueOf(150.0)) // Placeholder as Maps API doesn't always give hotel prices
                         .imageUrl(imageUrl)
                         .contactDetails("N/A")
+                        .rating(rating > 0 ? rating : null)
+                        .reviewsCount(reviewsCount > 0 ? reviewsCount : null)
                         .vibes(vibes != null ? vibes : List.of("Relaxing"))
                         .build());
             }

@@ -64,6 +64,16 @@ const HomePage: React.FC<HomePageProps> = ({
     return localStorage.getItem('eden-location-allowed') !== 'false';
   });
 
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
+  const [featuredProperties, setFeaturedProperties] = useState<Property[]>([]);
+
+  // Cache seeded properties on initial load for the Featured Stays right sidebar
+  useEffect(() => {
+    if (!hasSearched && results && results.length > 0 && featuredProperties.length === 0) {
+      setFeaturedProperties(results);
+    }
+  }, [results, hasSearched, featuredProperties]);
+
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -157,10 +167,13 @@ const HomePage: React.FC<HomePageProps> = ({
 
   const { weather } = useWeather(activeLocation);
 
-  // Background click deselects any focused location card
+  // Background click deselects any focused location card and closes sidebars
   const handleBackgroundClick = () => {
     if (focusedPropertyIds.length > 0) {
       setFocusedPropertyIds([]);
+    }
+    if (isRightSidebarOpen) {
+      setIsRightSidebarOpen(false);
     }
   };
 
@@ -233,6 +246,90 @@ const HomePage: React.FC<HomePageProps> = ({
           onSuggestionClick={handleSuggestionClick}
           onClose={() => setIsSidebarOpen(false)}
         />
+      )}
+
+      {/* Right Sidebar Toggle Button — Desktop Only */}
+      {!isMobile && !isRightSidebarOpen && (
+        <button 
+          className="right-sidebar-toggle-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsRightSidebarOpen(true);
+          }}
+          title="Featured Stays"
+          aria-label="Expand featured stays sidebar"
+        >
+          🏨 Featured Stays
+        </button>
+      )}
+
+      {/* Right Sidebar (Featured Stays) - Desktop Only */}
+      {!isMobile && (
+        <aside 
+          className={`right-sidebar glass-card ${isRightSidebarOpen ? 'open' : 'collapsed'}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="sidebar-section">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 className="sidebar-title">Featured Stays</h3>
+              <button 
+                onClick={() => setIsRightSidebarOpen(false)}
+                className="sidebar-inner-close-btn"
+                aria-label="Close featured stays"
+                style={{
+                  background: 'rgba(0, 0, 0, 0.4)',
+                  border: '1px solid var(--color-border)',
+                  color: 'var(--color-text)',
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  transition: 'background 0.2s'
+                }}
+              >
+                ✕ Close
+              </button>
+            </div>
+            <p className="sidebar-info-text">
+              Recommended properties in Sri Lanka sorted by Google Maps review scores.
+            </p>
+
+            <div className="featured-stays-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '12px' }}>
+              {featuredProperties
+                .slice()
+                .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+                .map((property) => (
+                  <div 
+                    key={property.id} 
+                    className="sidebar-suggestion-card"
+                    onClick={() => {
+                      handleSuggestionClick(property);
+                      setIsRightSidebarOpen(false);
+                    }}
+                    style={{ background: 'rgba(255, 255, 255, 0.04)', borderRadius: '12px', padding: '10px', cursor: 'pointer' }}
+                  >
+                    <img 
+                      src={property.imageUrl} 
+                      alt={property.name} 
+                      className="suggestion-img" 
+                      style={{ width: '60px', height: '60px', borderRadius: '8px', objectFit: 'cover' }}
+                    />
+                    <div className="suggestion-details" style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginLeft: '12px' }}>
+                      <div className="suggestion-name" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text)' }}>{property.name}</div>
+                      <div className="suggestion-loc" style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>📍 {property.location}</div>
+                      <div className="suggestion-rating" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                        ⭐ {property.rating ? property.rating.toFixed(1) : '4.5'} ({property.reviewsCount || 100} reviews)
+                      </div>
+                      <div className="suggestion-price" style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                        ${property.pricePerNight} / night
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </aside>
       )}
 
       {isMobile && activeMobileTab !== 'search' ? (
@@ -525,7 +622,7 @@ const HomePage: React.FC<HomePageProps> = ({
           )}
 
           {/* Results Section - Scrolls below search bar */}
-          {(hasSearched || (results && results.length > 0)) && (
+          {(hasSearched || (isMobile && results && results.length > 0)) && (
             <section className="results-section" aria-label="Properties list">
               {!hasSearched && (
                 <h2 className="featured-stays-title" style={{ fontSize: '1.5rem', fontWeight: 700, margin: '40px 0 16px', color: '#ffffff', textShadow: '0 2px 10px rgba(0,0,0,0.5)', textAlign: 'center' }}>
@@ -655,14 +752,76 @@ const HomePage: React.FC<HomePageProps> = ({
           50%      { transform: rotate(15deg) scale(1.1); }
         }
 
-        /* Collapsible Sidebar spacing for main content */
+        /* Sidebars overlay directly on top of centered main content, avoiding horizontal layout shifts */
         @media (min-width: 768px) {
           .home-page.sidebar-active .main-content {
-            margin-left: 320px;
+            margin-left: 0;
           }
           .home-page .main-content {
-            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: none;
           }
+        }
+
+        /* Right Sidebar Toggle Button styling */
+        .right-sidebar-toggle-btn {
+          position: absolute;
+          top: 16px;
+          right: 24px;
+          z-index: 1000;
+          background: rgba(10, 14, 26, 0.85);
+          border: 1px solid var(--color-border);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          color: #ffffff;
+          padding: 8px 16px;
+          border-radius: 8px;
+          font-size: 0.8rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .right-sidebar-toggle-btn:hover {
+          background: var(--color-primary-glow);
+          border-color: var(--color-primary);
+        }
+
+        /* Collapsible Right Sidebar styling */
+        .right-sidebar {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+          overflow-y: auto;
+          box-sizing: border-box;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+          position: fixed;
+          top: 80px;
+          bottom: 48px;
+          right: 0;
+          width: 320px;
+          height: calc(100vh - 80px - 48px);
+          padding: 24px;
+          border-radius: 0;
+          border-top: none;
+          border-bottom: none;
+          border-right: none;
+          border-left: 1px solid var(--color-border);
+          z-index: 999;
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .right-sidebar::-webkit-scrollbar {
+          display: none;
+        }
+        .right-sidebar.collapsed {
+          transform: translateX(100%);
+        }
+        .right-sidebar.open {
+          transform: translateX(0);
         }
 
         /* Sidebar Toggle Button styling */

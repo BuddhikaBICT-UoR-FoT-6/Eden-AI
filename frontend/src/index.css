@@ -205,11 +205,18 @@ img {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--color-border);
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr);
   align-items: center;
-  justify-content: space-between;
   padding: 0 40px;
   z-index: 1000;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-self: start;
 }
 
 .navbar-brand {
@@ -237,12 +244,11 @@ img {
 }
 
 .navbar-tagline {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
   font-size: 0.9rem;
   color: var(--color-text-muted);
   white-space: nowrap;
+  justify-self: center;
+  margin: 0;
 }
 
 .nav-theme-toggle-btn {
@@ -259,6 +265,7 @@ img {
   color: var(--color-text);
   min-width: 44px;
   min-height: 44px;
+  justify-self: end;
 }
 
 .nav-theme-toggle-btn:hover {

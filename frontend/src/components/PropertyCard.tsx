@@ -9,6 +9,8 @@ interface PropertyCardProps {
   pricePerNight: number;
   imageUrl: string;
   contactDetails?: string;
+  rating?: number;
+  reviewsCount?: number;
   vibes: string[];
   isFocused: boolean;
   onFocus: () => void;
@@ -52,6 +54,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
   imageUrl,
   vibes,
   contactDetails,
+  rating,
+  reviewsCount,
   isFocused,
   onFocus,
   onCloseFocus,
@@ -130,7 +134,16 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
       </div>
 
       <div className="card-body">
-        <h3 className="card-title">{name}</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <h3 className="card-title">{name}</h3>
+          {rating !== undefined && (
+            <div className="card-rating" style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#f0f4f8', padding: '4px 8px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 600 }}>
+              <span style={{ color: '#f59e0b' }}>⭐</span>
+              <span>{rating.toFixed(1)}</span>
+              {reviewsCount !== undefined && <span style={{ color: '#64748b', fontSize: '0.75rem', marginLeft: '2px' }}>({reviewsCount})</span>}
+            </div>
+          )}
+        </div>
         <p className="card-location">
           <span className="card-location-icon">📍</span>
           <a

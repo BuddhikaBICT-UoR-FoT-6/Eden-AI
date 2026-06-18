@@ -38,6 +38,7 @@ public class PropertyService {
     private final PropertyVibeRepository propertyVibeRepository;
     private final SearchHistoryRepository searchHistoryRepository;
     private final AiSearchProvider aiSearchProvider;
+    private final GoogleMapsService googleMapsService;
 
     /**
      * Retrieves all properties from the database.
@@ -110,9 +111,8 @@ public class PropertyService {
             });
         }
 
-        // Fetch real-world results using the AI provider instead of Google Maps API directly
-        // This avoids the strict Maps API billing requirements while still providing accurate real-world locations
-        List<PropertyResponseDTO> realWorldResults = aiSearchProvider.searchRealWorldProperties(prompt);
+        // Fetch real-world results using Google Maps API for real locations, ratings, and photos
+        List<PropertyResponseDTO> realWorldResults = googleMapsService.searchRealWorldProperties(finalExtraction.getLocation(), finalExtraction.getVibes());
 
         List<PropertyResponseDTO> combined = new java.util.ArrayList<>(dbResults);
         if (realWorldResults != null) {
@@ -213,6 +213,8 @@ public class PropertyService {
                 .pricePerNight(property.getPricePerNight())
                 .imageUrl(property.getImageUrl())
                 .contactDetails(property.getContactDetails())
+                .rating(property.getRating())
+                .reviewsCount(property.getReviewsCount())
                 .vibes(vibeNames)
                 .build();
     }

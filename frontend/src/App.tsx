@@ -133,7 +133,7 @@ const App: React.FC = () => {
         {/* Top Navigation - Desktop Only */}
         {!isMobile && (
           <nav className="navbar" role="navigation" aria-label="Main navigation">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div className="navbar-left">
               <a href="/" className="navbar-brand" aria-label="Eden AI Home" onClick={(e) => { e.preventDefault(); reset(); }}>
                 <img src="/eden_logo.png" alt="Eden AI Logo" className="navbar-logo-img" />
                 <span className="navbar-name">Eden <strong>AI</strong></span>

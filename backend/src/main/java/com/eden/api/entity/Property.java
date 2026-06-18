@@ -50,6 +50,12 @@ public class Property {
     @Column(name = "contact_details", length = 255)
     private String contactDetails; // The contact details (phone/email).
 
+    @Column(name = "rating")
+    private Double rating; // Google Maps rating, e.g., 4.7
+
+    @Column(name = "reviews_count")
+    private Integer reviewsCount; // Google Maps reviews count, e.g., 148
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt; // Timestamp of when the property was created.
 
