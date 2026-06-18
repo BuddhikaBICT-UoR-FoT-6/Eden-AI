@@ -2,9 +2,10 @@ package com.eden.api.service;
 
 import com.eden.api.dto.SearchExtractionDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -16,10 +17,10 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @SuppressWarnings("null")
-@ConditionalOnProperty(name = "ai.provider", havingValue = "ollama")
 public class OllamaService implements AiSearchProvider {
 
     @Value("${ollama.api.url:http://localhost:11434}")
+    @Getter @Setter
     private String ollamaUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
