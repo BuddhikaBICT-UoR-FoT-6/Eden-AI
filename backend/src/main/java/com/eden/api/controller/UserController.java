@@ -101,15 +101,16 @@ public class UserController {
 
     @PostMapping("/login/initiate")
     public ResponseEntity<?> initiateLogin(@RequestBody AuthRequest request) {
-        // Find user by username or email
         Optional<User> userOpt = userRepository.findByUsername(request.getUsername());
         if (userOpt.isEmpty() || !userOpt.get().getPassword().equals(request.getPassword())) {
             return ResponseEntity.badRequest().body("Invalid credentials");
         }
-        
         User user = userOpt.get();
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            return ResponseEntity.badRequest().body("No email on this account. Please re-register.");
+        }
         otpService.generateAndSendOtp(user.getEmail(), "LOGIN", user.getUsername());
-        return ResponseEntity.ok(user.getEmail()); // Return email so frontend knows where OTP was sent
+        return ResponseEntity.ok(user.getEmail());
     }
 
     @PostMapping("/login/verify")
