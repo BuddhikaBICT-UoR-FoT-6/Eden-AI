@@ -1104,12 +1104,12 @@ const HomePage: React.FC<HomePageProps> = ({
           align-items: center;
           gap: 6px;
           padding: 6px 16px;
-          background: var(--color-primary-glow);
-          border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.5);
           border-radius: 100px;
           font-size: 0.8rem;
           font-weight: 500;
-          color: var(--color-primary);
+          color: #ffffff;
           letter-spacing: 0.04em;
           text-transform: uppercase;
         }
