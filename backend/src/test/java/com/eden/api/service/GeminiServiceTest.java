@@ -5,6 +5,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.*;
@@ -15,6 +17,10 @@ import static org.assertj.core.api.Assertions.*;
  */
 @ExtendWith(MockitoExtension.class)
 class GeminiServiceTest {
+
+    @Mock private ObjectMapper objectMapper;
+    @Mock private DatasetService datasetService;
+    @Mock private GoogleMapsService googleMapsService;
 
     @InjectMocks
     private GeminiService geminiService;

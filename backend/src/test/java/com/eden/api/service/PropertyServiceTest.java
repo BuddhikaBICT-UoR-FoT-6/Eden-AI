@@ -40,6 +40,7 @@ class PropertyServiceTest {
     @Mock private PropertyVibeRepository propertyVibeRepository;
     @Mock private GeminiService geminiService;
     @Mock private GoogleMapsService googleMapsService;
+    @Mock private DatasetService datasetService;
 
     @InjectMocks
     private PropertyService propertyService;
